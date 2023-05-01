@@ -1,6 +1,6 @@
-package org.example;
+package manager;
 
-public enum SelectionPolicy
-{
+public enum SelectionPolicy {
     SHORTEST_QUEUE, SHORTEST_TIME
 }
+

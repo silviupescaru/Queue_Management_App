@@ -1,31 +1,24 @@
-package org.example;
+package manager;
 
 public class Task implements Comparable<Task> {
-    private final int arrivalTime;
-    private final int processingTime;
-    private final int id;
+    int id;
+    int arrivalTime;
+    int processingTime;
 
-    public Task(int arrivalTime, int processingTime, int id) {
-        this.arrivalTime = arrivalTime;
-        this.processingTime = processingTime;
-        this.id = id;
+    public Task() {
+        id = 0;
+        arrivalTime = 0;
+        processingTime = 0;
     }
-
-    public int getArrivalTime() {
-        return arrivalTime;
-    }
-
-    public int getProcessingTime() {
-        return processingTime;
-    }
-
-    public int getId(){
-        return id;
-    }
-
 
     @Override
-    public int compareTo(Task otherTask) {
-        return Integer.compare(this.arrivalTime, otherTask.arrivalTime);
+    public int compareTo(Task task) {
+        return arrivalTime - task.arrivalTime;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + id + ", " + arrivalTime + ", " + processingTime + ")";
     }
 }
+

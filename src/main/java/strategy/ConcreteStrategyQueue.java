@@ -1,16 +1,23 @@
-package org.example;
+package strategy;
 
-import java.util.List;
+import manager.Server;
+import manager.Task;
+
+import java.util.ArrayList;
 
 public class ConcreteStrategyQueue implements Strategy {
+
     @Override
-    public void addTask(List<Server> servers, Task t) {
-        Server selectedServer = servers.get(0);
+    public void addTask(ArrayList<Server> servers, Task task) {
+        int minQueueSize = servers.get(0).tasks.size();
+        Server minServer = servers.get(0);
         for (Server server : servers) {
-            if (server.getTasks().length < selectedServer.getTasks().length) {
-                selectedServer = server;
+            if (minQueueSize > server.tasks.size()) {
+                minServer = server;
+                minQueueSize = server.tasks.size();
             }
         }
-        selectedServer.addTask(t);
+        minServer.addTask(task  );
     }
 }
+

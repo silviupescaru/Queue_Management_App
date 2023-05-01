@@ -1,95 +1,149 @@
-package org.example;
+package manager;
+import view.GUI;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class SimulationManager implements Runnable {
-    // data read from ui
-    public int timeLimit = 60;
-    public int maxProcessingTime = 4;
-    public int minProcessingTime = 2;
-    public int maxArrivalTime = 30;
-    public int minArrivalTime = 2;
-    public int numberOfServers = 5;
-    public int numberOfClients = 30;
-    public SelectionPolicy selectionPolicy = SelectionPolicy.SHORTEST_QUEUE;
 
-    // entity responsible with queue management and client distribution
-    private final Scheduler scheduler;
+    int timeLimit;
+    int maxProcessingTime;
+    int minProcessingTime;
+    int maxArrivalTime;
+    int minArrivalTime;
+    int numberOfServers;
+    int numberOfClients;
 
-    // frame for displaying simulation
-    private final SimulationFrame frame;
+    String logOfEvents;
+    SelectionPolicy selectionPolicy;
 
-    // pool of tasks (client shopping in the store)
-    private final List<Task> generatedTasks;
+    GUI view;
+    Scheduler scheduler;
+    ArrayList<Task> generatedTasks;
 
-    public SimulationManager() {
-        // initialize the scheduler
-        scheduler = new Scheduler(numberOfServers, maxProcessingTime);
-        scheduler.changeStrategy(selectionPolicy);
-
-        // initialize frame to display simulation
-        frame = new SimulationFrame(numberOfServers);
-
-        // generate numberOfClients clients using generateNRandomTasks()
-        // and store them to generatedTasks
-        generatedTasks = new ArrayList<>();
+    public SimulationManager(int numberOfServers, int numberOfClients, int minArrivalTime, int maxArrivalTime,
+                             int minProcessingTime, int maxProcessingTime, int timeLimit, GUI view, SelectionPolicy selectionPolicy) {
+        this.numberOfServers = numberOfServers;
+        this.numberOfClients = numberOfClients;
+        this.minArrivalTime = minArrivalTime;
+        this.maxArrivalTime = maxArrivalTime;
+        this.minProcessingTime = minProcessingTime;
+        this.maxProcessingTime = maxProcessingTime;
+        this.timeLimit = timeLimit;
+        this.view = view;
+        this.selectionPolicy = selectionPolicy;
+        this.logOfEvents = "";
+        this.generatedTasks = null;
+        this.scheduler = new Scheduler(numberOfServers, selectionPolicy);
         generateNRandomTasks();
     }
 
-    private void generateNRandomTasks() {
-        // generate N random tasks:
-        // -random processing time
-        // minProcessingTime < processingTime < maxProcessingTime
-        // -random arrivalTime
-        // sort list with respect to arrivalTime
-        for (int i = 0; i < numberOfClients; i++) {
-            int processingTime = (int) (Math.random() * (maxProcessingTime - minProcessingTime)) + minProcessingTime;
-            int arrivalTime = (int) (Math.random() * timeLimit);
-            Task task = new Task(arrivalTime, processingTime, i + 1);
+    void generateNRandomTasks() {
+
+        generatedTasks = new ArrayList<>();
+        int totalWaitingTime = 0;
+        int totalProcessingTime = 0;
+        for(int i = 0; i < numberOfClients; i++) {
+            Task task = new Task();
+            task.id = i + 1;
+            task.arrivalTime = minArrivalTime + (int) (Math.random() * (maxArrivalTime - minArrivalTime));
+            task.processingTime = minProcessingTime + (int) (Math.random() * (maxProcessingTime - minProcessingTime));
             generatedTasks.add(task);
         }
         Collections.sort(generatedTasks);
     }
 
+    int allQueuesFinished() {
+        if(!generatedTasks.isEmpty())
+            return 0;
+        for(Server server : scheduler.servers) {
+            if(server.tasks.size() != 0) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+
     @Override
     public void run() {
-        int currentTime = 0;
-        while (currentTime < timeLimit) {
-            // iterate generatedTasks list and pick tasks that have the
-            // arrivalTime equal with the currentTime
-            // -send task to queue by calling the dispatchTask method
-            // from Scheduler
-            // -delete client from list
-            for (Task task : generatedTasks) {
-                if (task.getArrivalTime() == currentTime) {
+        int timeNow = 0, totalWaitingPeriodNow, maxWaitingPeriod = 0;
+        scheduler.runThreads();
+        logOfEvents = logOfEvents + selectionPolicy.name() + "\n";
+        while(timeNow < timeLimit && allQueuesFinished() != 1) {
+            timeNow++;
+            String timeInfo = "\n Time: " + timeNow + "\n";
+            ArrayList<Task> newGeneratedTasks = new ArrayList<>();
+            for(Task task : generatedTasks) {
+                if(task.arrivalTime == timeNow) {
+                    task.processingTime++;
                     scheduler.dispatchTask(task);
-                } else if (task.getArrivalTime() > currentTime) {
-                    break;
                 }
+                else{
+                    newGeneratedTasks.add(task);
+                }
+                generatedTasks = newGeneratedTasks;
             }
-            int finalCurrentTime = currentTime;
-            generatedTasks.removeIf(task -> task.getArrivalTime() <= finalCurrentTime);
-
-            // update UI frame
-            frame.update(scheduler.getServers());
-            currentTime++;
-
-            // wait and interval of 1 second
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
+
+            logOfEvents = logOfEvents + timeInfo + getLogNow();
+
+            view.eventLogTextArea.setText(logOfEvents);
         }
-        // display simulation statistics
-        //frame.displayStatistics(generatedTasks);
+        logOfEvents = logOfEvents + "\nEnd of Simulation";
+        view.eventLogTextArea.setText(logOfEvents);
+
+        writeToTextFile(logOfEvents);
     }
 
-    public static void main(String[] args) {
-        SimulationManager gen = new SimulationManager();
-        Thread t = new Thread(gen);
-        t.start();
+    public String getLogNow() {
+
+        StringBuilder log = new StringBuilder();
+        log.append("Waiting Clients:\n");
+        for(Task task : generatedTasks) {
+            log.append(task.toString()).append(" ");
+        }
+        log.append("\n");
+        int queueNumber = 1;
+        for(Server server : scheduler.servers) {
+            log.append("Queue ").append(queueNumber).append(": ");
+            if(server.toString().isEmpty()) {
+                log.append("closed");
+            }
+            else {
+                log.append(server);
+            }
+            queueNumber++;
+            log.append("\n");
+        }
+        log.append("\n");
+        return log.toString();
     }
+
+    void writeToTextFile(String logOfEvents) {
+        String fileName = "SimulationLog.txt";
+        File file = new File(fileName);
+        int fileNumber = 1;
+        while (file.exists()) {
+            fileName = "SimulationLog" + fileNumber + ".txt";
+            file = new File(fileName);
+            fileNumber++;
+        }
+        try {
+            FileWriter fileWriter = new FileWriter(fileName);
+            fileWriter.write(logOfEvents);
+            fileWriter.close();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
 }
+

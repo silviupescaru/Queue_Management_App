@@ -1,12 +1,12 @@
-package org.example;
-
+package manager;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Server implements Runnable {
-    private final BlockingQueue<Task> tasks;
-    private final AtomicInteger waitingPeriod;
+
+    public BlockingQueue<Task> tasks;
+    public AtomicInteger waitingPeriod;
 
     public Server() {
         tasks = new LinkedBlockingQueue<>();
@@ -14,28 +14,47 @@ public class Server implements Runnable {
     }
 
     public void addTask(Task newTask) {
-        tasks.add(newTask);
-        waitingPeriod.getAndAdd(newTask.getProcessingTime());
+        try{
+            tasks.put(newTask);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        waitingPeriod.set(waitingPeriod.intValue() + newTask.processingTime);
     }
 
-    public AtomicInteger getWaitingPeriod() {
-        return waitingPeriod;
+    public Task getTasks(Task newTask) {
+        return newTask;
     }
 
+    @Override
+    public void run(){
 
-    public void run() {
-        while (true) {
+        while(true) {
             try {
-                Task currentTask = tasks.take();
-                Thread.sleep(currentTask.getProcessingTime() * 1000);
-                waitingPeriod.getAndAdd(-currentTask.getProcessingTime());
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+            if(!tasks.isEmpty()) {
+                tasks.peek().processingTime--;
+                waitingPeriod.set(waitingPeriod.decrementAndGet());
+                if(tasks.element().processingTime == 0) {
+                    try {
+                        tasks.take();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }
 
-    public Task[] getTasks() {
-        return tasks.toArray(new Task[tasks.size()]);
+    @Override
+    public String toString() {
+        StringBuilder string = new StringBuilder();
+        for(Task task : tasks)
+            string.append(task.toString()).append(" ");
+        return string.toString();
     }
 }
+

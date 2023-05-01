@@ -1,16 +1,23 @@
-package org.example;
+package strategy;
 
-import java.util.List;
+import manager.Server;
+import manager.Task;
+
+import java.util.ArrayList;
 
 public class ConcreteStrategyTime implements Strategy {
+
     @Override
-    public void addTask(List<Server> servers, Task t) {
-        Server selectedServer = servers.get(0);
-        for (Server server : servers) {
-            if (server.getWaitingPeriod().intValue() < selectedServer.getWaitingPeriod().intValue()) {
-                selectedServer = server;
+    public void addTask(ArrayList<Server> servers, Task task) {
+        int minWaitingPeriod = servers.get(0).waitingPeriod.intValue();
+        Server minServer = servers.get(0);
+        for(Server server : servers) {
+            if(minWaitingPeriod > server.waitingPeriod.intValue()) {
+                minServer = server;
+                minWaitingPeriod = server.waitingPeriod.intValue();
             }
         }
-        selectedServer.addTask(t);
+        minServer.addTask(task);
     }
 }
+
