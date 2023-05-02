@@ -247,13 +247,13 @@ public class GUI extends JFrame implements ActionListener {
 
 
 
-        numberOfClientsTextField.setText("4");
+        numberOfClientsTextField.setText("10");
         numberOfServersTextField.setText("2");
-        timeLimitTextField.setText("30");
+        timeLimitTextField.setText("20");
         minArrivalTimeTextField.setText("2");
-        maxArrivalTimeTextField.setText("4");
+        maxArrivalTimeTextField.setText("10");
         minProcessingTimeTextField.setText("2");
-        maxProcessingTimeTextField.setText("30");
+        maxProcessingTimeTextField.setText("4");
 
 
 
@@ -278,6 +278,8 @@ public class GUI extends JFrame implements ActionListener {
         stopButton.setBackground(new Color(66, 92, 90));
         stopButton.setBorder(border);
         inputPanel.add(stopButton);
+
+        eventLogTextArea.setCaretPosition(eventLogTextArea.getDocument().getLength());
 
         setContentPane(contentPanel);
         setVisible(true);

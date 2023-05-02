@@ -58,7 +58,9 @@ public class Controller implements ActionListener {
                         maxArrivalTime, minProcessingTime, maxProcessingTime, maxTime, view, selectionPolicyObj);
 
                 view.eventLogTextArea.setText(simulationManager.getLogNow());
-                Thread thread = new Thread(simulationManager);
+                view.eventLogTextArea.setCaretPosition(view.eventLogTextArea.getDocument().getLength());
+
+            Thread thread = new Thread(simulationManager);
                 thread.start();
         }
 

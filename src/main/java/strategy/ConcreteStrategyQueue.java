@@ -17,7 +17,7 @@ public class ConcreteStrategyQueue implements Strategy {
                 minQueueSize = server.tasks.size();
             }
         }
-        minServer.addTask(task  );
+        minServer.addTask(task);
     }
 }
 

@@ -20,4 +20,3 @@ public class ConcreteStrategyTime implements Strategy {
         minServer.addTask(task);
     }
 }
-
